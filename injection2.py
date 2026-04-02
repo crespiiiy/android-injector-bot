@@ -11,6 +11,7 @@ import zlib
 import base64
 import hashlib
 import logging
+import os
 from tqdm import tqdm
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -24,7 +25,8 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-BOT_TOKEN = "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo"
+# Read BOT_TOKEN from environment variable, fallback to original hardcoded if not set
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo")
 
 # States
 TOKEN, CHATID, FILE = range(3)
@@ -220,6 +222,4 @@ def main():
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
-    # تأكد من تثبيت tqdm
-    # pip install tqdm python-telegram-bot --upgrade
     main()
