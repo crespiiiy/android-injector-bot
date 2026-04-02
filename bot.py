@@ -11,6 +11,7 @@ import zlib
 import base64
 import hashlib
 import logging
+import os
 from tqdm import tqdm
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -24,7 +25,8 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-BOT_TOKEN = "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo"
+# Use environment variable for the bot token
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8695021881:AAGaevEMGterFy_QmZCyNvKejKfTabisiFo")
 ADMIN_ID = 7238044992
 ADMIN_USERNAME = "@Cl_v_Cl"   # ← تم تصحيحه هنا
 
